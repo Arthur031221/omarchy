@@ -12,5 +12,13 @@ if [[ ! -e /etc/mkinitcpio.conf.d/surface_device_modules.conf ]]; then
   sudo bash -e "$OMARCHY_PATH/install/hardware/fix-surface-keyboard.sh"
 fi
 
-sudo limine-mkinitcpio
+# A failed kernel build can be skipped without failing limine-mkinitcpio.
+rebuild_log=$(mktemp)
+trap 'rm -f "$rebuild_log"' EXIT
+sudo limine-mkinitcpio 2>&1 | tee "$rebuild_log"
+if grep -q -e "ERROR:" -e "WARNING: failed to process kernel" "$rebuild_log" ||
+  ! grep -q -e "Initcpio image generation successful" -e "Unified kernel image generation successful" "$rebuild_log"; then
+  echo "Surface boot image rebuild did not complete. Rerun omarchy-migrate after fixing the build." >&2
+  exit 1
+fi
 sudo install -Dm644 /dev/null "$rebuild_marker"

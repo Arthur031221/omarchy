@@ -45,8 +45,31 @@ echo rebuild >>"$SURFACE_REBUILD_LOG"
 if [[ ${SURFACE_REBUILD_FAIL:-no} == "yes" ]]; then
   exit 17
 fi
+case ${SURFACE_REBUILD_MODE:-uki} in
+  skipped)
+    echo "==> Unified kernel image generation successful"
+    printf '\e[31mERROR: mkinitcpio failed for kernel 6.19.13, skipping.\e[0m\n' >&2
+    exit 0
+    ;;
+  partial)
+    echo "==> Unified kernel image generation successful"
+    echo "ERROR: mkinitcpio failed for kernel 6.18.28-lts, skipping."
+    exit 0
+    ;;
+  warning)
+    echo "WARNING: failed to process kernel from /usr/lib/modules/6.19.13/pkgbase: mkinitcpio failed" >&2
+    exit 0
+    ;;
+  empty) exit 0 ;;
+esac
 source "$SURFACE_CONF"
 printf '%s\n' "${MODULES[*]}" >"$SURFACE_BOOT_MODULES"
+if [[ ${SURFACE_REBUILD_MODE:-uki} == "regular" ]]; then
+  echo "==> Initcpio image generation successful"
+else
+  echo "==> WARNING: Possibly missing firmware for module: 'qat_4xxx'" >&2
+  echo "==> Unified kernel image generation successful"
+fi
 SH
 chmod +x "$stub_bin"/*
 
@@ -109,3 +132,25 @@ pass "a failed Surface rebuild remains pending"
 run_migration yes no yes
 [[ -f $marker && $(wc -l <"$calls") == 4 ]] || fail "Surface migration retries a failed rebuild"
 pass "Surface migration retries a failed rebuild"
+
+for mode in skipped partial warning empty; do
+  rm "$marker"
+  printf 'stale_boot_modules\n' >"$boot_modules"
+  set +e
+  SURFACE_REBUILD_MODE="$mode" run_migration yes no yes 2>"$test_tmp/$mode.stderr"
+  status=$?
+  set -e
+  [[ $status != 0 && ! -e $marker && $(<"$boot_modules") == "stale_boot_modules" ]] ||
+    fail "Surface rebuild mode $mode remains pending" "$status"
+  pass "Surface rebuild mode $mode remains pending"
+  run_migration yes no yes
+  [[ -f $marker && $(<"$boot_modules") == "$expected custom_module" ]] ||
+    fail "Surface migration retries rebuild mode $mode"
+  pass "Surface migration retries rebuild mode $mode"
+done
+
+rm "$marker"
+SURFACE_REBUILD_MODE=regular run_migration yes no yes
+[[ -f $marker && $(<"$boot_modules") == "$expected custom_module" ]] ||
+  fail "a successful regular initramfs rebuild completes the migration"
+pass "a successful regular initramfs rebuild completes the migration"
