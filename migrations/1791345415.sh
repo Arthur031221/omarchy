@@ -5,7 +5,7 @@ omarchy-cmd-present limine-mkinitcpio || exit 0
 pinctrl_module=$(lsmod | grep pinctrl_ || true)
 [[ -z $pinctrl_module ]] || exit 0
 
-rebuild_marker="/var/lib/omarchy/migrations/1791074563"
+rebuild_marker="/var/lib/omarchy/migrations/1791345415"
 [[ ! -e $rebuild_marker ]] || exit 0
 
 if [[ ! -e /etc/mkinitcpio.conf.d/surface_device_modules.conf ]]; then

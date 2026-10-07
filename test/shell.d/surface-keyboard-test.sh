@@ -51,6 +51,11 @@ intel_modules=$(bash -euo pipefail -c 'source "$1"; printf "%s\n" "${MODULES[*]}
   fail "Intel Surface setup keeps the detected pinctrl and LPSS modules" "$intel_modules"
 pass "Intel Surface setup keeps the detected pinctrl and LPSS modules"
 
+intel_preserved=$(bash -euo pipefail -c 'MODULES=(existing_module); source "$1"; printf "%s\n" "${MODULES[*]}"' bash "$conf")
+[[ $intel_preserved == "existing_module $intel_modules" ]] ||
+  fail "the pinctrl branch keeps previously configured initramfs modules" "$intel_preserved"
+pass "the pinctrl branch keeps previously configured initramfs modules"
+
 rm -f "$conf"
 run_leaf yes no
 [[ -f $conf ]] || fail "Surface setup writes initramfs modules without pinctrl"

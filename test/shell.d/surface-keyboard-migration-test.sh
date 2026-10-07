@@ -4,7 +4,7 @@ set -euo pipefail
 
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/base-test.sh"
 
-migration="$ROOT/migrations/1791074563.sh"
+migration="$ROOT/migrations/1791345415.sh"
 [[ -f $migration ]] || fail "Surface upgrades provide a boot-image migration"
 [[ $(stat -c '%a' "$migration") == 644 ]] || fail "Surface migration has mode 0644"
 
@@ -12,7 +12,7 @@ test_tmp=$(mktemp -d)
 trap 'rm -rf "$test_tmp"' EXIT
 stub_bin="$test_tmp/bin"
 conf="$test_tmp/etc/mkinitcpio.conf.d/surface_device_modules.conf"
-marker="$test_tmp/var/lib/omarchy/migrations/1791074563"
+marker="$test_tmp/var/lib/omarchy/migrations/1791345415"
 boot_modules="$test_tmp/boot-modules"
 calls="$test_tmp/rebuilds"
 fixture_path="$test_tmp/omarchy"
